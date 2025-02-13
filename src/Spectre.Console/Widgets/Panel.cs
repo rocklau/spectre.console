@@ -46,10 +46,11 @@ public sealed class Panel : Renderable, IHasBoxBorder, IHasBorder, IExpandable, 
     public int? Height { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether content should scroll when exceeding height.
-    /// If true, shows most recent content; if false, truncates excess content.
+    /// Gets or sets the scroll offset for the panel content.
+    /// If set, the panel will display the most recent content based on the offset when the content exceeds the panel height.
+    /// If null, the content will be truncated to fit the panel height.
     /// </summary>
-    public bool Scroll { get; set; }
+    public int? ScrollOffset { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether or not the panel is inlined.
@@ -152,10 +153,10 @@ public sealed class Panel : Renderable, IHasBoxBorder, IHasBorder, IExpandable, 
         var childSegments = ((IRenderable)child).Render(options with { Height = height }, innerWidth);
         var allLines = Segment.SplitLines(childSegments, innerWidth, null).ToList();
 
-        // If scrolling is enabled and content exceeds height limit, keep only the last few lines
-        if (Scroll && height.HasValue && allLines.Count > height.Value)
+        // If we have a scroll offset, we need to skip
+        if (ScrollOffset.HasValue && height.HasValue && allLines.Count > height.Value)
         {
-            allLines = allLines.Skip(allLines.Count - height.Value).ToList();
+            allLines = allLines.Skip(allLines.Count - height.Value - ScrollOffset.Value).ToList();
         }
 
         foreach (var (_, _, last, line) in allLines.Enumerate())
