@@ -46,6 +46,12 @@ public sealed class Panel : Renderable, IHasBoxBorder, IHasBorder, IExpandable, 
     public int? Height { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether content should scroll when exceeding height.
+    /// If true, shows most recent content; if false, truncates excess content.
+    /// </summary>
+    public bool Scroll { get; set; }
+
+    /// <summary>
     /// Gets or sets a value indicating whether or not the panel is inlined.
     /// </summary>
     internal bool Inline { get; set; }
@@ -144,7 +150,15 @@ public sealed class Panel : Renderable, IHasBoxBorder, IHasBorder, IExpandable, 
 
         // Split the child segments into lines.
         var childSegments = ((IRenderable)child).Render(options with { Height = height }, innerWidth);
-        foreach (var (_, _, last, line) in Segment.SplitLines(childSegments, innerWidth, height).Enumerate())
+        var allLines = Segment.SplitLines(childSegments, innerWidth, null).ToList();
+
+        // If scrolling is enabled and content exceeds height limit, keep only the last few lines
+        if (Scroll && height.HasValue && allLines.Count > height.Value)
+        {
+            allLines = allLines.Skip(allLines.Count - height.Value).ToList();
+        }
+
+        foreach (var (_, _, last, line) in allLines.Enumerate())
         {
             if (line.Count == 1 && line[0].IsWhiteSpace)
             {
